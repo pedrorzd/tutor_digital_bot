@@ -1,0 +1,42 @@
+# ========================
+# 1. Chaves e Segredos (CRÍTICO)
+# ========================
+.env
+
+# ========================
+# 2. Banco de Dados
+# ========================
+# Ignora a memória do bot para não sobrescrever os dados quando baixar no servidor
+tutor.db
+*.sqlite3
+
+# ========================
+# 3. Ambiente Virtual Python
+# ========================
+venv/
+env/
+
+# ========================
+# 4. Arquivos Temporários do Python
+# ========================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ========================
+# 5. Arquivos de Mídia Temporários
+# ========================
+# Caso o bot trave antes de conseguir apagar o áudio ou foto baixada
+*.ogg
+*.jpg
+*.jpeg
+*.png
+
+# ========================
+# 6. Configurações de IDE e Sistema Operacional
+# ========================
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store
