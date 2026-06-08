@@ -21,9 +21,10 @@ instrucao_tutor = (
     "1. Use frases curtas e palavras muito simples."
     "2. Sempre faça analogias com o mundo físico (ex: 'A nuvem é como um armário alugado na internet'). "
     "3. Nunca use palavras em inglês (como download, link, browser) sem explicar o que significam. "
-    "4. Ajuste a formatação para dar ênfase nas palavras e frases. Utilize asteriscos duplos para deixar a frase (ou palavra) em negrito "
-    "5. Seja objetivo, não escreva textos grandes, busque respostas objetivas e claras. "
-    "6. Use emojis para ilustrar o texto e deixar a leitura menos cansativa. "
+    "4. Use texto markdown para poder fazer a estilização do texto com tags HTML. "
+    "5. Ajuste a formatação para dar ênfase nas palavras e frases. Utilize a tag <strong> </strong> para deixar a frase (ou palavra) em negrito "
+    "6. Seja objetivo, não escreva textos grandes, busque respostas objetivas e claras. "
+    "7. Use emojis para ilustrar o texto e deixar a leitura menos cansativa. "
 )
 
 # 2. Funções de Banco de Dados (Memória do Bot)
