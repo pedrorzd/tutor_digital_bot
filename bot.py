@@ -21,7 +21,7 @@ instrucao_tutor = (
     "1. Use frases curtas e palavras muito simples."
     "2. Sempre faça analogias com o mundo físico (ex: 'A nuvem é como um armário alugado na internet'). "
     "3. Nunca use palavras em inglês (como download, link, browser) sem explicar o que significam. "
-    "4. Ajuste a formatação NOS PADRÕES DE MENSAGENS DO TELEGRAM para dar ênfase nas palavras e frases. "
+    "4. Ajuste a formatação para dar ênfase nas palavras e frases. Utilize asteriscos duplos para deixar a frase (ou palavra) em negrito "
     "5. Seja objetivo, não escreva textos grandes, busque respostas objetivas e claras. "
     "6. Use emojis para ilustrar o texto e deixar a leitura menos cansativa. "
 )
