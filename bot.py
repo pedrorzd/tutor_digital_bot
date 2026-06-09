@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import html
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.constants import ParseMode
@@ -13,7 +14,7 @@ TOKEN = os.getenv("TELEGRAM_TOKEN")
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_KEY)
 
-# Personalidade da IA (Atualizada para Markdown V1)
+# Personalidade da IA (Atualizada para HTML Seguro)
 instrucao_tutor = (
     "Você é o 'Tutor Digital', um assistente virtual paciente e amigável. "
     "Seu objetivo é ensinar tecnologia básica para pessoas com baixo domínio tecnológico. "
@@ -21,7 +22,7 @@ instrucao_tutor = (
     "1. Use frases curtas e palavras muito simples."
     "2. Sempre faça analogias com o mundo físico (ex: 'A nuvem é como um armário alugado na internet'). "
     "3. Nunca use palavras em inglês (como download, link, browser) sem explicar o que significam. "
-    "4. IMPORTANTE: Para colocar palavras em negrito, use o formato Markdown com um único asterisco (*palavra*). NUNCA use HTML (<b>) ou Markdown V2 (**)."
+    "4. IMPORTANTE: Para colocar palavras em negrito, use APENAS a formatação HTML com a tag <b> (ex: <b>palavra</b>). Não use asteriscos."
     "5. Seja objetivo, não escreva textos grandes, busque respostas objetivas e claras. "
     "6. Use emojis para ilustrar o texto e deixar a leitura menos cansativa. "
 )
@@ -56,6 +57,22 @@ def buscar_historico(user_id, limite=5):
     conn.close()
     return [{"role": papel, "parts": [{"text": conteudo}]} for papel, conteudo in reversed(linhas)]
 
+# Tratamento Seguro de HTML
+def formatar_html_seguro(texto):
+    """
+    Usa html.escape() para garantir que caracteres como <, > e & não quebrem o bot do Telegram.
+    Depois, restaura apenas as tags <b> e </b> que permitimos que a IA utilize.
+    """
+    # 1. Escapa tudo (ex: < vira &lt;, > vira &gt;)
+    texto_escapado = html.escape(texto)
+    
+    # 2. Restaura apenas as tags de formatação permitidas
+    texto_seguro = texto_escapado.replace('&lt;b&gt;', '<b>').replace('&lt;/b&gt;', '</b>')
+    # Opcional: tratar <strong> caso a IA acabe usando
+    texto_seguro = texto_seguro.replace('&lt;strong&gt;', '<b>').replace('&lt;/strong&gt;', '</b>')
+    
+    return texto_seguro
+
 # 3. Menu Inicial com Nova Identidade
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     teclado = [
@@ -64,20 +81,19 @@ async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     ]
     interface_botoes = ReplyKeyboardMarkup(teclado, resize_keyboard=True)
     
-    # Atualizado para Markdown V1
     mensagem_boas_vindas = (
-        "Olá! Que alegria ter você aqui. Eu sou o seu *Tutor Digital*. 🤖\n\n"
+        "Olá! Que alegria ter você aqui. Eu sou o seu <b>Tutor Digital</b>. 🤖\n\n"
         "Estou aqui para te ajudar a usar o celular e a internet sem complicação. "
         "Não tenha medo de apertar nada, estamos aqui para aprender juntos!\n\n"
         "Você pode falar comigo do jeito que achar mais fácil:\n\n"
-        "👆 *Tocando* nos botões aqui embaixo\n"
-        "⌨️ *Digitando* a sua dúvida\n"
-        "🎤 Mandando um *áudio* (como no WhatsApp)\n"
-        "📸 Enviando uma *foto* de algo que não entendeu\n\n"
+        "👆 <b>Tocando</b> nos botões aqui embaixo\n"
+        "⌨️ <b>Digitando</b> a sua dúvida\n"
+        "🎤 Mandando um <b>áudio</b> (como no WhatsApp)\n"
+        "📸 Enviando uma <b>foto</b> de algo que não entendeu\n\n"
         "Como eu posso te ajudar hoje?"
     )
     
-    await update.message.reply_text(mensagem_boas_vindas, reply_markup=interface_botoes, parse_mode=ParseMode.MARKDOWN)
+    await update.message.reply_text(mensagem_boas_vindas, reply_markup=interface_botoes, parse_mode=ParseMode.HTML)
 
 # 4. Processa Texto
 async def responder_texto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -86,15 +102,15 @@ async def responder_texto(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
     if texto_recebido == "📱 Como usar o WhatsApp":
         resposta = "O WhatsApp é como um correio super rápido. Você pode mandar mensagens de texto, áudios e fotos. Quer aprender a mandar um áudio?"
-        await update.message.reply_text(resposta) # Não precisa de parse_mode aqui
+        await update.message.reply_text(resposta)
         return
     elif texto_recebido == "🌐 O que é Internet?":
         resposta = "A Internet é como uma grande estrada invisível que conecta todos os celulares do mundo, permitindo que a gente converse e veja vídeos mesmo estando longe."
-        await update.message.reply_text(resposta) # Não precisa de parse_mode aqui
+        await update.message.reply_text(resposta)
         return
     elif texto_recebido == "🔒 Dicas de Segurança":
         resposta = "Regra de ouro: nunca passe senhas ou códigos que chegam por SMS para ninguém, nem mesmo se a pessoa disser que é do banco."
-        await update.message.reply_text(resposta) # Não precisa de parse_mode aqui
+        await update.message.reply_text(resposta)
         return
 
     salvar_mensagem(user_id, "user", texto_recebido)
@@ -107,14 +123,16 @@ async def responder_texto(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             contents=historico,
             config=types.GenerateContentConfig(system_instruction=instrucao_tutor)
         )
-        resposta = resposta_ia.text
-        salvar_mensagem(user_id, "model", resposta)
+        resposta_crua = resposta_ia.text
+        salvar_mensagem(user_id, "model", resposta_crua)
+        
+        # Validação com html.escape
+        resposta = formatar_html_seguro(resposta_crua)
     except Exception as e:
         print(f"Erro no texto: {e}")
         resposta = "Desculpe, minha memória falhou um pouquinho. Pode me perguntar de novo?"
 
-    # Atualizado para parse_mode=ParseMode.MARKDOWN
-    await update.message.reply_text(resposta, parse_mode=ParseMode.MARKDOWN)    
+    await update.message.reply_text(resposta, parse_mode=ParseMode.HTML)    
 
 # 5. Processa Áudio
 async def responder_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -140,11 +158,13 @@ async def responder_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=msg_temp.message_id)
         os.remove(caminho_local)
         
-        resposta = resposta_ia.text
-        salvar_mensagem(user_id, "model", resposta)
+        resposta_crua = resposta_ia.text
+        salvar_mensagem(user_id, "model", resposta_crua)
         
-        # Atualizado para parse_mode=ParseMode.MARKDOWN
-        await update.message.reply_text(resposta, parse_mode=ParseMode.MARKDOWN)
+        # Validação com html.escape
+        resposta = formatar_html_seguro(resposta_crua)
+        
+        await update.message.reply_text(resposta, parse_mode=ParseMode.HTML)
         
     except Exception as e:
         print(f"Erro no áudio: {e}")
@@ -176,11 +196,13 @@ async def responder_imagem(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=msg_temp.message_id)
         os.remove(caminho_local)
 
-        resposta = resposta_ia.text
-        salvar_mensagem(user_id, "model", resposta)
+        resposta_crua = resposta_ia.text
+        salvar_mensagem(user_id, "model", resposta_crua)
         
-        # Atualizado para parse_mode=ParseMode.MARKDOWN
-        await update.message.reply_text(resposta, parse_mode=ParseMode.MARKDOWN)
+        # Validação com html.escape
+        resposta = formatar_html_seguro(resposta_crua)
+        
+        await update.message.reply_text(resposta, parse_mode=ParseMode.HTML)
 
     except Exception as e:
         print(f"Erro na imagem: {e}")
@@ -196,7 +218,7 @@ def main() -> None:
     app.add_handler(MessageHandler(filters.VOICE, responder_audio))
     app.add_handler(MessageHandler(filters.PHOTO, responder_imagem))
 
-    print("🤖 Tutor Digital rodando com formatação Markdown (V1)!")
+    print("🤖 Tutor Digital rodando com formatação HTML Seguro (html.escape)!")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
