@@ -13,7 +13,7 @@ TOKEN = os.getenv("TELEGRAM_TOKEN")
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=GEMINI_KEY)
 
-# Personalidade da IA (Atualizada para usar Markdown do Telegram)
+# Personalidade da IA (Revertida para HTML)
 instrucao_tutor = (
     "Você é o 'Tutor Digital', um assistente virtual paciente e amigável. "
     "Seu objetivo é ensinar tecnologia básica para pessoas com baixo domínio tecnológico. "
@@ -21,10 +21,9 @@ instrucao_tutor = (
     "1. Use frases curtas e palavras muito simples."
     "2. Sempre faça analogias com o mundo físico (ex: 'A nuvem é como um armário alugado na internet'). "
     "3. Nunca use palavras em inglês (como download, link, browser) sem explicar o que significam. "
-    "4. IMPORTANTE: O Telegram utiliza uma versão específica de Markdown (MarkdownV2). Para dar ênfase (negrito), você deve utilizar asteriscos duplos (**palavra**). "
-    "5. Não utilize HTML (como <b> ou <strong>). "
-    "6. Seja objetivo, não escreva textos grandes, busque respostas objetivas e claras. "
-    "7. Use emojis para ilustrar o texto e deixar a leitura menos cansativa. "
+    "4. IMPORTANTE: Para colocar palavras em negrito, use formatação HTML (ex: <b>palavra</b>). NUNCA use asteriscos (**)."
+    "5. Seja objetivo, não escreva textos grandes, busque respostas objetivas e claras. "
+    "6. Use emojis para ilustrar o texto e deixar a leitura menos cansativa. "
 )
 
 # 2. Funções de Banco de Dados (Memória do Bot)
@@ -57,16 +56,6 @@ def buscar_historico(user_id, limite=5):
     conn.close()
     return [{"role": papel, "parts": [{"text": conteudo}]} for papel, conteudo in reversed(linhas)]
 
-# Função auxiliar para escapar caracteres especiais no MarkdownV2 do Telegram
-def escape_markdown(text):
-    """Escapa caracteres especiais do MarkdownV2 do Telegram, preservando o negrito."""
-    # O MarkdownV2 exige que muitos caracteres sejam escapados
-    # Lista de caracteres que precisam de escape, exceto o asterisco usado para negrito
-    escape_chars = ['_', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!']
-    for char in escape_chars:
-        text = text.replace(char, f'\\{char}')
-    return text
-
 # 3. Menu Inicial com Nova Identidade
 async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     teclado = [
@@ -75,37 +64,38 @@ async def comando_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     ]
     interface_botoes = ReplyKeyboardMarkup(teclado, resize_keyboard=True)
     
-    # Atualizado para MarkdownV2
+    # Revertido para HTML
     mensagem_boas_vindas = (
-        "Olá\\! Que alegria ter você aqui\\. Eu sou o seu **Tutor Digital**\\. 🤖\n\n"
-        "Estou aqui para te ajudar a usar o celular e a internet sem complicação\\. "
-        "Não tenha medo de apertar nada, estamos aqui para aprender juntos\\!\n\n"
+        "Olá! Que alegria ter você aqui. Eu sou o seu <b>Tutor Digital</b>. 🤖\n\n"
+        "Estou aqui para te ajudar a usar o celular e a internet sem complicação. "
+        "Não tenha medo de apertar nada, estamos aqui para aprender juntos!\n\n"
         "Você pode falar comigo do jeito que achar mais fácil:\n\n"
-        "👆 **Tocando** nos botões aqui embaixo\n"
-        "⌨️ **Digitando** a sua dúvida\n"
-        "🎤 Mandando um **áudio** \\(como no WhatsApp\\)\n"
-        "📸 Enviando uma **foto** de algo que não entendeu\n\n"
+        "👆 <b>Tocando</b> nos botões aqui embaixo\n"
+        "⌨️ <b>Digitando</b> a sua dúvida\n"
+        "🎤 Mandando um <b>áudio</b> (como no WhatsApp)\n"
+        "📸 Enviando uma <b>foto</b> de algo que não entendeu\n\n"
         "Como eu posso te ajudar hoje?"
     )
     
-    await update.message.reply_text(mensagem_boas_vindas, reply_markup=interface_botoes, parse_mode=ParseMode.MARKDOWN_V2)
+    await update.message.reply_text(mensagem_boas_vindas, reply_markup=interface_botoes, parse_mode=ParseMode.HTML)
 
 # 4. Processa Texto
 async def responder_texto(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = str(update.effective_user.id)
     texto_recebido = update.message.text
 
+    # Respostas rápidas também usam HTML se necessário, mas aqui são simples
     if texto_recebido == "📱 Como usar o WhatsApp":
-        resposta = "O WhatsApp é como um correio super rápido\\. Você pode mandar mensagens de texto, áudios e fotos\\. Quer aprender a mandar um áudio?"
-        await update.message.reply_text(resposta, parse_mode=ParseMode.MARKDOWN_V2)
+        resposta = "O WhatsApp é como um correio super rápido. Você pode mandar mensagens de texto, áudios e fotos. Quer aprender a mandar um áudio?"
+        await update.message.reply_text(resposta)
         return
     elif texto_recebido == "🌐 O que é Internet?":
-        resposta = "A Internet é como uma grande estrada invisível que conecta todos os celulares do mundo, permitindo que a gente converse e veja vídeos mesmo estando longe\\."
-        await update.message.reply_text(resposta, parse_mode=ParseMode.MARKDOWN_V2)
+        resposta = "A Internet é como uma grande estrada invisível que conecta todos os celulares do mundo, permitindo que a gente converse e veja vídeos mesmo estando longe."
+        await update.message.reply_text(resposta)
         return
     elif texto_recebido == "🔒 Dicas de Segurança":
-        resposta = "Regra de ouro: nunca passe senhas ou códigos que chegam por SMS para ninguém, nem mesmo se a pessoa disser que é do banco\\."
-        await update.message.reply_text(resposta, parse_mode=ParseMode.MARKDOWN_V2)
+        resposta = "Regra de ouro: nunca passe senhas ou códigos que chegam por SMS para ninguém, nem mesmo se a pessoa disser que é do banco."
+        await update.message.reply_text(resposta)
         return
 
     salvar_mensagem(user_id, "user", texto_recebido)
@@ -118,21 +108,20 @@ async def responder_texto(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             contents=historico,
             config=types.GenerateContentConfig(system_instruction=instrucao_tutor)
         )
-        resposta_crua = resposta_ia.text
-        salvar_mensagem(user_id, "model", resposta_crua)
-        resposta = escape_markdown(resposta_crua)
+        resposta = resposta_ia.text
+        salvar_mensagem(user_id, "model", resposta)
     except Exception as e:
         print(f"Erro no texto: {e}")
-        resposta = "Desculpe, minha memória falhou um pouquinho\\. Pode me perguntar de novo?"
+        resposta = "Desculpe, minha memória falhou um pouquinho. Pode me perguntar de novo?"
 
-    # Adicionado parse_mode=ParseMode.MARKDOWN_V2
-    await update.message.reply_text(resposta, parse_mode=ParseMode.MARKDOWN_V2)    
+    # Revertido para parse_mode=ParseMode.HTML
+    await update.message.reply_text(resposta, parse_mode=ParseMode.HTML)    
 
 # 5. Processa Áudio
 async def responder_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = str(update.effective_user.id)
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
-    msg_temp = await update.message.reply_text("🎧 Estou ouvindo o seu áudio\\.\\.\\.", parse_mode=ParseMode.MARKDOWN_V2)
+    msg_temp = await update.message.reply_text("🎧 Estou ouvindo o seu áudio...")
     
     try:
         arquivo_id = update.message.voice.file_id
@@ -152,22 +141,21 @@ async def responder_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=msg_temp.message_id)
         os.remove(caminho_local)
         
-        resposta_crua = resposta_ia.text
-        salvar_mensagem(user_id, "model", resposta_crua)
-        resposta = escape_markdown(resposta_crua)
+        resposta = resposta_ia.text
+        salvar_mensagem(user_id, "model", resposta)
         
-        # Adicionado parse_mode=ParseMode.MARKDOWN_V2
-        await update.message.reply_text(resposta, parse_mode=ParseMode.MARKDOWN_V2)
+        # Revertido para parse_mode=ParseMode.HTML
+        await update.message.reply_text(resposta, parse_mode=ParseMode.HTML)
         
     except Exception as e:
         print(f"Erro no áudio: {e}")
-        await update.message.reply_text("Puxa, tive um probleminha para ouvir\\. Pode tentar gravar de novo?", parse_mode=ParseMode.MARKDOWN_V2)
+        await update.message.reply_text("Puxa, tive um probleminha para ouvir. Pode tentar gravar de novo?")
 
 # 6. Processa Imagens/Prints de Tela
 async def responder_imagem(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = str(update.effective_user.id)
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
-    msg_temp = await update.message.reply_text("👀 Estou olhando a sua imagem\\.\\.\\.", parse_mode=ParseMode.MARKDOWN_V2)
+    msg_temp = await update.message.reply_text("👀 Estou olhando a sua imagem...")
 
     try:
         arquivo_id = update.message.photo[-1].file_id
@@ -189,16 +177,15 @@ async def responder_imagem(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         await context.bot.delete_message(chat_id=update.effective_chat.id, message_id=msg_temp.message_id)
         os.remove(caminho_local)
 
-        resposta_crua = resposta_ia.text
-        salvar_mensagem(user_id, "model", resposta_crua)
-        resposta = escape_markdown(resposta_crua)
+        resposta = resposta_ia.text
+        salvar_mensagem(user_id, "model", resposta)
         
-        # Adicionado parse_mode=ParseMode.MARKDOWN_V2
-        await update.message.reply_text(resposta, parse_mode=ParseMode.MARKDOWN_V2)
+        # Revertido para parse_mode=ParseMode.HTML
+        await update.message.reply_text(resposta, parse_mode=ParseMode.HTML)
 
     except Exception as e:
         print(f"Erro na imagem: {e}")
-        await update.message.reply_text("Puxa, minha visão embaçou um pouco e não consegui ver a imagem\\. Pode tentar mandar de novo?", parse_mode=ParseMode.MARKDOWN_V2)
+        await update.message.reply_text("Puxa, minha visão embaçou um pouco e não consegui ver a imagem. Pode tentar mandar de novo?")
 
 # 7. Liga o bot
 def main() -> None:
@@ -210,7 +197,7 @@ def main() -> None:
     app.add_handler(MessageHandler(filters.VOICE, responder_audio))
     app.add_handler(MessageHandler(filters.PHOTO, responder_imagem))
 
-    print("🤖 Tutor Digital rodando com MarkdownV2!")
+    print("🤖 Tutor Digital rodando com formatação HTML!")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
