@@ -57,19 +57,23 @@ def buscar_historico(user_id, limite=5):
     conn.close()
     return [{"role": papel, "parts": [{"text": conteudo}]} for papel, conteudo in reversed(linhas)]
 
-# Tratamento Seguro de HTML
+# Tratamento Seguro de HTML (com correção de Markdown)
 def formatar_html_seguro(texto):
     """
-    Usa html.escape() para garantir que caracteres como <, > e & não quebrem o bot do Telegram.
-    Depois, restaura apenas as tags <b> e </b> que permitimos que a IA utilize.
+    Primeiro, converte o Markdown que a IA pode enviar por engano para HTML.
+    Depois, usa html.escape() para garantir que outros caracteres não quebrem o bot.
+    Por fim, restaura apenas as tags <b> e </b> que permitimos.
     """
-    # 1. Escapa tudo (ex: < vira &lt;, > vira &gt;)
-    texto_escapado = html.escape(texto)
+    # 1. Substitui os padrões de Markdown por tags HTML
+    # Trata o caso de **palavra**
+    import re
+    texto_convertido = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', texto)
+
+    # 2. Escapa tudo (ex: < vira &lt;, > vira &gt;)
+    texto_escapado = html.escape(texto_convertido)
     
-    # 2. Restaura apenas as tags de formatação permitidas
+    # 3. Restaura apenas as tags de formatação permitidas
     texto_seguro = texto_escapado.replace('&lt;b&gt;', '<b>').replace('&lt;/b&gt;', '</b>')
-    # Opcional: tratar <strong> caso a IA acabe usando
-    texto_seguro = texto_seguro.replace('&lt;strong&gt;', '<b>').replace('&lt;/strong&gt;', '</b>')
     
     return texto_seguro
 
@@ -126,7 +130,7 @@ async def responder_texto(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         resposta_crua = resposta_ia.text
         salvar_mensagem(user_id, "model", resposta_crua)
         
-        # Validação com html.escape
+        # Validação e correção com a nova função
         resposta = formatar_html_seguro(resposta_crua)
     except Exception as e:
         print(f"Erro no texto: {e}")
@@ -161,7 +165,7 @@ async def responder_audio(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         resposta_crua = resposta_ia.text
         salvar_mensagem(user_id, "model", resposta_crua)
         
-        # Validação com html.escape
+        # Validação e correção com a nova função
         resposta = formatar_html_seguro(resposta_crua)
         
         await update.message.reply_text(resposta, parse_mode=ParseMode.HTML)
@@ -199,7 +203,7 @@ async def responder_imagem(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         resposta_crua = resposta_ia.text
         salvar_mensagem(user_id, "model", resposta_crua)
         
-        # Validação com html.escape
+        # Validação e correção com a nova função
         resposta = formatar_html_seguro(resposta_crua)
         
         await update.message.reply_text(resposta, parse_mode=ParseMode.HTML)
@@ -218,7 +222,7 @@ def main() -> None:
     app.add_handler(MessageHandler(filters.VOICE, responder_audio))
     app.add_handler(MessageHandler(filters.PHOTO, responder_imagem))
 
-    print("🤖 Tutor Digital rodando com formatação HTML Seguro (html.escape)!")
+    print("🤖 Tutor Digital rodando com formatação HTML Robusta!")
     app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
